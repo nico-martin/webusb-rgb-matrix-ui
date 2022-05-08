@@ -79,6 +79,7 @@ button {
     justify-content: center;
     align-items: center;
     color: #000;
+    z-index: 100;
 }
 
 .connect-area:before {
