@@ -130,17 +130,43 @@ button {
 
 }
 
+.main-content__preview {
+    display: flex;
+}
+
+.main-content__preview-arrow {
+    font-size: 3rem;
+    margin-left: var(--spacing);
+    opacity: 0.1;
+}
+
+.main-content__preview-image, .main-content__matrix {
+    width: 30vmin;
+    height: 30vmin;
+}
+
+.main-content__matrix {
+    margin-left: var(--spacing);
+}
+
+.main-content__preview-image {
+    background-position: center;
+    background-size: cover;
+}
+
 .main-content__drop {
     margin-top: var(--spacing);
 }
 
 .main-content__canvas {
     display: none;
+    pointer-events: none;
 }
 
 .main-content__drop {
     width: 100%;
-    height: 20vmin;
+    height: 15vmin;
+    pointer-events: auto;
 }
 
 /**
@@ -149,15 +175,60 @@ button {
 
 .matrix {
     display: grid;
-    width: 50vmin;
-    height: 50vmin;
     border: 0.5px solid #000;
+    position: relative;
+    z-index: -1;
 }
 
 .matrix__pixel {
     border: 0.5px solid #000;
     box-sizing: border-box;
+    opacity: 1;
+    transition: opacity 400ms ease-in-out;
 }
+
+.matrix__loader {
+    width: 4vmin;
+    height: 4vmin;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    margin-left: -2vmin;
+    margin-top: -2vmin;
+    border: 0.3vmin solid currentColor;
+    border-left-color: transparent;
+    border-radius: 2vmin;
+    animation: spin 750ms infinite linear;
+    opacity: 0;
+    transition: opacity 400ms ease-in-out;
+    transform: rotate(0deg);
+}
+
+.matrix[data-loading="true"] .matrix__loader {
+    opacity: 1;
+}
+
+.matrix[data-loading="true"] .matrix__pixel {
+    opacity: 0;
+}
+
+.preview {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: var(--border-radius);
+    border: 0.3vmin solid rgba(255, 255, 255, 0.1);
+}
+
+.preview__icon {
+    width: 50%;
+    opacity: 0.04;
+}
+
+.preview[style] .preview__icon {
+    display: none;
+}
+
 
 .drop {
     background-color: var(--color-bkg-dark);
@@ -192,4 +263,13 @@ button {
 .drop__text {
     font-size: 1.7vmin;
     margin-top: 2vmin;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }

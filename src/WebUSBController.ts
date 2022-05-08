@@ -27,15 +27,17 @@ export default class WebUSBController {
       }
     });
 
-    navigator.usb.addEventListener('connect', (ev) => {
-      // todo: check if this work when coming from the prompt (maybe need to add a check before)
-      this.device = ev.device;
-      document.dispatchEvent(
-        new CustomEvent(this.connectEventKey, {
-          detail: ev.device,
-        })
+    navigator.usb.addEventListener(
+      'connect',
+      async (ev) => await this.connectDevice(ev.device)
+    );
+
+    navigator.usb
+      .getDevices()
+      .then(
+        async (devices) =>
+          devices.length && (await this.connectDevice(devices[0]))
       );
-    });
   }
 
   readLoop = () => {
@@ -52,11 +54,10 @@ export default class WebUSBController {
     );
   };
 
-  async connect(options?: USBDeviceRequestOptions) {
-    this.device = await navigator.usb.requestDevice(options);
-    await this.device.open();
-    await this.device.selectConfiguration(1);
-    this.device.configuration.interfaces.map((element) =>
+  private async connectDevice(device: USBDevice) {
+    await device.open();
+    await device.selectConfiguration(1);
+    device.configuration.interfaces.map((element) =>
       element.alternates.map((elementalt) => {
         if (elementalt.interfaceClass == 0xff) {
           this.interfaceNumber = element.interfaceNumber;
@@ -72,11 +73,11 @@ export default class WebUSBController {
       })
     );
 
-    await this.device.claimInterface(this.interfaceNumber);
-    await this.device.selectAlternateInterface(this.interfaceNumber, 0);
-    await this.device.claimInterface(this.interfaceNumber);
+    await device.claimInterface(this.interfaceNumber);
+    await device.selectAlternateInterface(this.interfaceNumber, 0);
+    await device.claimInterface(this.interfaceNumber);
 
-    this.device
+    device
       .controlTransferOut({
         requestType: 'class',
         recipient: 'interface',
@@ -94,7 +95,19 @@ export default class WebUSBController {
       })
     );
 
-    return this.device;
+    document.dispatchEvent(
+      new CustomEvent(this.connectEventKey, {
+        detail: device,
+      })
+    );
+
+    this.device = device;
+  }
+
+  async connect(options?: USBDeviceRequestOptions) {
+    const device = await navigator.usb.requestDevice(options);
+    await this.connectDevice(device);
+    return device;
   }
 
   async disconnect() {

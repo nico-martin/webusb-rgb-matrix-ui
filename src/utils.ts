@@ -23,3 +23,6 @@ export const gridMatrixToNeopixelArray = (gridMatrix: rgbT[][]): number[] => {
 
   return arrayFlat<number>(arrayFlat<rgbT>(ledMatrix));
 };
+
+export const wait = (ms: number = 2000): Promise<void> =>
+  new Promise((resolve) => window.setTimeout(() => resolve(), ms));

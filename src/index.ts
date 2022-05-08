@@ -1,6 +1,6 @@
 import WebUSBController from './WebUSBController';
 import DropArea from './DropArea';
-import { rgbT, getGridMatrix, gridMatrixToNeopixelArray } from './utils';
+import { rgbT, getGridMatrix, gridMatrixToNeopixelArray, wait } from './utils';
 import { loadImageFromSrc, srcFromFile } from './image';
 
 const CANVAS_SIZE = 16;
@@ -17,6 +17,7 @@ const CANVAS_SIZE = 16;
       document.querySelector<HTMLButtonElement>('#connect');
     const $connectButtonSkip =
       document.querySelector<HTMLButtonElement>('#connect-skip');
+    const $imagePreview = document.querySelector<HTMLDivElement>('#preview');
 
     let gridMatrix: rgbT[][] = getGridMatrix([0, 0, 0], 0);
 
@@ -29,22 +30,25 @@ const CANVAS_SIZE = 16;
       $canvas.height = size;
       $pixelArea.style['grid-template-columns'] = `repeat(${size}, 1fr)`;
       $pixelArea.style['grid-template-rows'] = `repeat(${size}, 1fr)`;
+      $pixelArea.querySelectorAll('.matrix__pixel').forEach((e) => e.remove());
       gridMatrix = getGridMatrix([0, 0, 0], size);
 
-      let html = '';
       let i = 0;
       gridMatrix.map((cols) =>
         cols.map(() => {
-          html += `<div class="matrix__pixel" data-pixelindex="${i}" ></div>`;
+          const el = document.createElement('div');
+          el.classList.add('matrix__pixel');
+          el.setAttribute('data-pixelindex', String(i));
+          $pixelArea.appendChild(el);
           i++;
         })
       );
-
-      $pixelArea.innerHTML = html;
     };
 
     const onFileChange = async (file: File) => {
       const src = await srcFromFile(file);
+      $pixelArea.setAttribute('data-loading', 'true');
+      $imagePreview.style.backgroundImage = `url(${src})`;
       const ctx = $canvas.getContext('2d');
       const image = await loadImageFromSrc(src);
 
@@ -70,7 +74,9 @@ const CANVAS_SIZE = 16;
         })
       );
 
+      await wait(1000);
       await reDrawMatrix();
+      $pixelArea.setAttribute('data-loading', 'false');
     };
 
     const reDrawMatrix = async () => {
@@ -102,7 +108,7 @@ const CANVAS_SIZE = 16;
     );
 
     $connectButton.addEventListener('click', async () => {
-      await Controller.connect({ filters: [{ vendorId: 0x2341 }] });
+      await Controller.connect({ filters: [{ vendorId: 0x2e8a }] });
       await Controller.send(
         new Uint8Array(gridMatrixToNeopixelArray(gridMatrix))
       );
@@ -117,7 +123,6 @@ const CANVAS_SIZE = 16;
     });
 
     Controller.onDeviceConnect((device) => {
-      console.log(device);
       if (device) {
         $connectArea.style.display = 'none';
       } else {

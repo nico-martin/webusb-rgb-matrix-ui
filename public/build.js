@@ -52,33 +52,39 @@ System.register("DropArea", [], function (exports_1, context_1) {
         execute: function () {
             DropArea = /** @class */ (function () {
                 function DropArea(element, callback) {
-                    this.element = null;
-                    this.element = element;
-                    this.setEventListener(callback);
-                    this.setupInput(callback);
+                    this.target = null;
+                    if (element) {
+                        this.target = element;
+                        this.setEventListener(callback);
+                        this.setupInput(callback);
+                    }
                 }
                 DropArea.prototype.setEventListener = function (callback) {
-                    this.element.addEventListener('dragenter', DropArea.onDragEnter);
-                    this.element.addEventListener('dragleave', DropArea.onDragLeave);
-                    this.element.addEventListener('dragover', DropArea.onDragOver);
-                    this.element.addEventListener('drop', function (e) { return DropArea.onDrop(e, callback); });
-                    this.element.setAttribute('data-focus', 'false');
+                    document.body.addEventListener('dragenter', function (e) { });
+                    document.body.addEventListener('dragleave', function (e) { });
+                    document.body.addEventListener('dragover', DropArea.onDragOver);
+                    document.body.addEventListener('drop', function (e) { return DropArea.onDrop(e, callback); });
+                    this.target.addEventListener('dragenter', this.onDragEnter.bind(this));
+                    this.target.addEventListener('dragleave', this.onDragLeave.bind(this));
+                    this.target.addEventListener('dragover', DropArea.onDragOver);
+                    this.target.addEventListener('drop', function (e) { return DropArea.onDrop(e, callback); });
+                    this.target.setAttribute('data-focus', 'false');
                 };
                 DropArea.prototype.setupInput = function (callback) {
                     var input = document.createElement('input');
                     input.type = 'file';
                     input.style.display = 'none';
-                    this.element.append(input);
-                    this.element.addEventListener('click', function () { return input.click(); });
+                    this.target.append(input);
+                    this.target.addEventListener('click', function () { return input.click(); });
                     input.addEventListener('change', function (ev) {
                         return callback(ev.target.files[0]);
                     });
                 };
-                DropArea.onDragEnter = function (e) {
-                    e.target.setAttribute('data-focus', 'true');
+                DropArea.prototype.onDragEnter = function (e) {
+                    this.target.setAttribute('data-focus', 'true');
                 };
-                DropArea.onDragLeave = function (e) {
-                    e.target.setAttribute('data-focus', 'false');
+                DropArea.prototype.onDragLeave = function (e) {
+                    this.target.setAttribute('data-focus', 'false');
                 };
                 DropArea.onDragOver = function (e) {
                     e.preventDefault();
@@ -134,32 +140,39 @@ System.register("WebUSBController", [], function (exports_2, context_2) {
                             }));
                         }
                     });
-                    navigator.usb.addEventListener('connect', function (ev) {
-                        // todo: check if this work when coming from the prompt (maybe need to add a check before)
-                        _this.device = ev.device;
-                        document.dispatchEvent(new CustomEvent(_this.connectEventKey, {
-                            detail: ev.device,
-                        }));
-                    });
+                    navigator.usb.addEventListener('connect', function (ev) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0: return [4 /*yield*/, this.connectDevice(ev.device)];
+                            case 1: return [2 /*return*/, _a.sent()];
+                        }
+                    }); }); });
+                    navigator.usb
+                        .getDevices()
+                        .then(function (devices) { return __awaiter(_this, void 0, void 0, function () { var _a; return __generator(this, function (_b) {
+                        switch (_b.label) {
+                            case 0:
+                                _a = devices.length;
+                                if (!_a) return [3 /*break*/, 2];
+                                return [4 /*yield*/, this.connectDevice(devices[0])];
+                            case 1:
+                                _a = (_b.sent());
+                                _b.label = 2;
+                            case 2: return [2 /*return*/, _a];
+                        }
+                    }); }); });
                 }
-                WebUSBController.prototype.connect = function (options) {
+                WebUSBController.prototype.connectDevice = function (device) {
                     return __awaiter(this, void 0, void 0, function () {
-                        var _a;
                         var _this = this;
-                        return __generator(this, function (_b) {
-                            switch (_b.label) {
-                                case 0:
-                                    _a = this;
-                                    return [4 /*yield*/, navigator.usb.requestDevice(options)];
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0: return [4 /*yield*/, device.open()];
                                 case 1:
-                                    _a.device = _b.sent();
-                                    return [4 /*yield*/, this.device.open()];
+                                    _a.sent();
+                                    return [4 /*yield*/, device.selectConfiguration(1)];
                                 case 2:
-                                    _b.sent();
-                                    return [4 /*yield*/, this.device.selectConfiguration(1)];
-                                case 3:
-                                    _b.sent();
-                                    this.device.configuration.interfaces.map(function (element) {
+                                    _a.sent();
+                                    device.configuration.interfaces.map(function (element) {
                                         return element.alternates.map(function (elementalt) {
                                             if (elementalt.interfaceClass == 0xff) {
                                                 _this.interfaceNumber = element.interfaceNumber;
@@ -174,16 +187,16 @@ System.register("WebUSBController", [], function (exports_2, context_2) {
                                             }
                                         });
                                     });
-                                    return [4 /*yield*/, this.device.claimInterface(this.interfaceNumber)];
+                                    return [4 /*yield*/, device.claimInterface(this.interfaceNumber)];
+                                case 3:
+                                    _a.sent();
+                                    return [4 /*yield*/, device.selectAlternateInterface(this.interfaceNumber, 0)];
                                 case 4:
-                                    _b.sent();
-                                    return [4 /*yield*/, this.device.selectAlternateInterface(this.interfaceNumber, 0)];
+                                    _a.sent();
+                                    return [4 /*yield*/, device.claimInterface(this.interfaceNumber)];
                                 case 5:
-                                    _b.sent();
-                                    return [4 /*yield*/, this.device.claimInterface(this.interfaceNumber)];
-                                case 6:
-                                    _b.sent();
-                                    this.device
+                                    _a.sent();
+                                    device
                                         .controlTransferOut({
                                         requestType: 'class',
                                         recipient: 'interface',
@@ -197,7 +210,27 @@ System.register("WebUSBController", [], function (exports_2, context_2) {
                                     document.dispatchEvent(new CustomEvent(this.connectEventKey, {
                                         detail: this.device,
                                     }));
-                                    return [2 /*return*/, this.device];
+                                    document.dispatchEvent(new CustomEvent(this.connectEventKey, {
+                                        detail: device,
+                                    }));
+                                    this.device = device;
+                                    return [2 /*return*/];
+                            }
+                        });
+                    });
+                };
+                WebUSBController.prototype.connect = function (options) {
+                    return __awaiter(this, void 0, void 0, function () {
+                        var device;
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0: return [4 /*yield*/, navigator.usb.requestDevice(options)];
+                                case 1:
+                                    device = _a.sent();
+                                    return [4 /*yield*/, this.connectDevice(device)];
+                                case 2:
+                                    _a.sent();
+                                    return [2 /*return*/, device];
                             }
                         });
                     });
@@ -276,7 +309,7 @@ System.register("image", [], function (exports_3, context_3) {
 });
 System.register("utils", [], function (exports_4, context_4) {
     "use strict";
-    var array, getGridMatrix, arrayFlat, gridMatrixToNeopixelArray;
+    var array, getGridMatrix, arrayFlat, gridMatrixToNeopixelArray, wait;
     var __moduleName = context_4 && context_4.id;
     return {
         setters: [],
@@ -302,6 +335,10 @@ System.register("utils", [], function (exports_4, context_4) {
                     });
                 });
                 return arrayFlat(arrayFlat(ledMatrix));
+            });
+            exports_4("wait", wait = function (ms) {
+                if (ms === void 0) { ms = 2000; }
+                return new Promise(function (resolve) { return window.setTimeout(function () { return resolve(); }, ms); });
             });
         }
     };
@@ -337,6 +374,7 @@ System.register("index", ["WebUSBController", "DropArea", "utils", "image"], fun
                     var $connectArea = document.querySelector('#connect-area');
                     var $connectButton = document.querySelector('#connect');
                     var $connectButtonSkip = document.querySelector('#connect-skip');
+                    var $imagePreview = document.querySelector('#preview');
                     var gridMatrix = utils_1.getGridMatrix([0, 0, 0], 0);
                     /**
                      * Methods
@@ -346,16 +384,18 @@ System.register("index", ["WebUSBController", "DropArea", "utils", "image"], fun
                         $canvas.height = size;
                         $pixelArea.style['grid-template-columns'] = "repeat(".concat(size, ", 1fr)");
                         $pixelArea.style['grid-template-rows'] = "repeat(".concat(size, ", 1fr)");
+                        $pixelArea.querySelectorAll('.matrix__pixel').forEach(function (e) { return e.remove(); });
                         gridMatrix = utils_1.getGridMatrix([0, 0, 0], size);
-                        var html = '';
                         var i = 0;
                         gridMatrix.map(function (cols) {
                             return cols.map(function () {
-                                html += "<div class=\"matrix__pixel\" data-pixelindex=\"".concat(i, "\" ></div>");
+                                var el = document.createElement('div');
+                                el.classList.add('matrix__pixel');
+                                el.setAttribute('data-pixelindex', String(i));
+                                $pixelArea.appendChild(el);
                                 i++;
                             });
                         });
-                        $pixelArea.innerHTML = html;
                     };
                     var onFileChange = function (file) { return __awaiter(_this, void 0, void 0, function () {
                         var src, ctx, image, imgSize, left, top;
@@ -364,6 +404,8 @@ System.register("index", ["WebUSBController", "DropArea", "utils", "image"], fun
                                 case 0: return [4 /*yield*/, image_1.srcFromFile(file)];
                                 case 1:
                                     src = _a.sent();
+                                    $pixelArea.setAttribute('data-loading', 'true');
+                                    $imagePreview.style.backgroundImage = "url(".concat(src, ")");
                                     ctx = $canvas.getContext('2d');
                                     return [4 /*yield*/, image_1.loadImageFromSrc(src)];
                                 case 2:
@@ -378,9 +420,13 @@ System.register("index", ["WebUSBController", "DropArea", "utils", "image"], fun
                                             return [canvasColor[0], canvasColor[1], canvasColor[2]];
                                         });
                                     });
-                                    return [4 /*yield*/, reDrawMatrix()];
+                                    return [4 /*yield*/, utils_1.wait(1000)];
                                 case 3:
                                     _a.sent();
+                                    return [4 /*yield*/, reDrawMatrix()];
+                                case 4:
+                                    _a.sent();
+                                    $pixelArea.setAttribute('data-loading', 'false');
                                     return [2 /*return*/];
                             }
                         });
@@ -414,7 +460,7 @@ System.register("index", ["WebUSBController", "DropArea", "utils", "image"], fun
                     $connectButton.addEventListener('click', function () { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             switch (_a.label) {
-                                case 0: return [4 /*yield*/, Controller.connect({ filters: [{ vendorId: 0x2341 }] })];
+                                case 0: return [4 /*yield*/, Controller.connect({ filters: [{ vendorId: 0x2e8a }] })];
                                 case 1:
                                     _a.sent();
                                     return [4 /*yield*/, Controller.send(new Uint8Array(utils_1.gridMatrixToNeopixelArray(gridMatrix)))];
@@ -434,7 +480,6 @@ System.register("index", ["WebUSBController", "DropArea", "utils", "image"], fun
                         console.log('received', { data: data, decoded: textDecoder.decode(data) });
                     });
                     Controller.onDeviceConnect(function (device) {
-                        console.log(device);
                         if (device) {
                             $connectArea.style.display = 'none';
                         }
