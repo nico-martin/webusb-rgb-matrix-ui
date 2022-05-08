@@ -135,14 +135,14 @@ button {
 }
 
 .main-content__preview-arrow {
-    font-size: 3rem;
+    font-size: 4rem;
     margin-left: var(--spacing);
     opacity: 0.1;
 }
 
 .main-content__preview-image, .main-content__matrix {
-    width: 30vmin;
-    height: 30vmin;
+    width: 35vmin;
+    height: 35vmin;
 }
 
 .main-content__matrix {
