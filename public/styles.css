@@ -12,6 +12,14 @@ html {
     --color-bkg-dark: #1e1e1e;
 }
 
+@media (orientation: portrait) {
+    html {
+        --spacing: 6vmin;
+        --spacing-small: 3vmin;
+        --border-radius: 3vmin;
+    }
+}
+
 body {
     line-height: 1.3;
     background-color: var(--color-bkg);
@@ -129,6 +137,7 @@ button {
 
 .main-content {
     display: flex;
+    align-items: center;
 }
 
 .main-content__arrow {
@@ -149,6 +158,29 @@ button {
 .main-content__canvas {
     display: none;
     pointer-events: none;
+}
+
+@media (orientation: portrait) {
+    .main-content {
+        flex-direction: column;
+    }
+
+    .main-content__drop, .main-content__matrix {
+        width: 60vmin;
+        height: 60vmin;
+    }
+
+    .main-content__matrix {
+        margin-top: var(--spacing);
+        margin-left: 0;
+    }
+
+    .main-content__arrow {
+        margin-top: var(--spacing);
+        margin-left: 0;
+        transform: rotate(90deg);
+        font-size: 3rem;
+    }
 }
 
 /**
@@ -233,6 +265,16 @@ button {
 .drop__text {
     font-size: 1.7vmin;
     margin-top: 2vmin;
+}
+
+@media (orientation: portrait) {
+    .drop__icon {
+        font-size: 10vmin;
+    }
+
+    .drop__text {
+        font-size: 3vmin;
+    }
 }
 
 @keyframes spin {
