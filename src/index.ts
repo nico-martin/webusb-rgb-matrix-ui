@@ -17,7 +17,7 @@ const CANVAS_SIZE = 16;
       document.querySelector<HTMLButtonElement>('#connect');
     const $connectButtonSkip =
       document.querySelector<HTMLButtonElement>('#connect-skip');
-    const $imagePreview = document.querySelector<HTMLDivElement>('#preview');
+    const $dropArea = document.querySelector<HTMLInputElement>('#drop');
 
     let gridMatrix: rgbT[][] = getGridMatrix([0, 0, 0], 0);
 
@@ -48,7 +48,7 @@ const CANVAS_SIZE = 16;
     const onFileChange = async (file: File) => {
       const src = await srcFromFile(file);
       $pixelArea.setAttribute('data-loading', 'true');
-      $imagePreview.style.backgroundImage = `url(${src})`;
+      $dropArea.style.backgroundImage = `url(${src})`;
       const ctx = $canvas.getContext('2d');
       const image = await loadImageFromSrc(src);
 

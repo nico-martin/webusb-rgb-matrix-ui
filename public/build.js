@@ -374,7 +374,7 @@ System.register("index", ["WebUSBController", "DropArea", "utils", "image"], fun
                     var $connectArea = document.querySelector('#connect-area');
                     var $connectButton = document.querySelector('#connect');
                     var $connectButtonSkip = document.querySelector('#connect-skip');
-                    var $imagePreview = document.querySelector('#preview');
+                    var $dropArea = document.querySelector('#drop');
                     var gridMatrix = utils_1.getGridMatrix([0, 0, 0], 0);
                     /**
                      * Methods
@@ -405,7 +405,7 @@ System.register("index", ["WebUSBController", "DropArea", "utils", "image"], fun
                                 case 1:
                                     src = _a.sent();
                                     $pixelArea.setAttribute('data-loading', 'true');
-                                    $imagePreview.style.backgroundImage = "url(".concat(src, ")");
+                                    $dropArea.style.backgroundImage = "url(".concat(src, ")");
                                     ctx = $canvas.getContext('2d');
                                     return [4 /*yield*/, image_1.loadImageFromSrc(src)];
                                 case 2:
