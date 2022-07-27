@@ -1,16 +1,21 @@
-import WebUSBController from './WebUSBController';
 import DropArea from './DropArea';
-import { rgbT, getGridMatrix, gridMatrixToNeopixelArray, wait } from './utils';
+import { getGridMatrix, rgbT, wait } from './utils';
 import { loadImageFromSrc, srcFromFile } from './image';
+import Matrix from './matrix';
+import MatrixSnake, { DIRECTIONS } from './snake';
 
 const CANVAS_SIZE = 16;
 
 (function () {
   document.addEventListener('DOMContentLoaded', (event) => {
-    const Controller = new WebUSBController();
+    const MatrixInstance = new Matrix(CANVAS_SIZE);
+    const Snake = new MatrixSnake({
+      width: CANVAS_SIZE,
+      height: CANVAS_SIZE,
+      fps: 3,
+    });
     const textDecoder = new TextDecoder('utf-8');
     const $canvas = document.querySelector<HTMLCanvasElement>('#image-canvas');
-    const $pixelArea = document.querySelector<HTMLDivElement>('#matrix');
     const $connectArea =
       document.querySelector<HTMLDivElement>('#connect-area');
     const $connectButton =
@@ -19,36 +24,17 @@ const CANVAS_SIZE = 16;
       document.querySelector<HTMLButtonElement>('#connect-skip');
     const $dropArea = document.querySelector<HTMLInputElement>('#drop');
 
-    let gridMatrix: rgbT[][] = getGridMatrix([0, 0, 0], 0);
-
     /**
-     * Methods
+     * Image
      */
-
-    const setUpMatrix = (size: number): void => {
-      $canvas.width = size;
-      $canvas.height = size;
-      $pixelArea.style['grid-template-columns'] = `repeat(${size}, 1fr)`;
-      $pixelArea.style['grid-template-rows'] = `repeat(${size}, 1fr)`;
-      $pixelArea.querySelectorAll('.matrix__pixel').forEach((e) => e.remove());
-      gridMatrix = getGridMatrix([0, 0, 0], size);
-
-      let i = 0;
-      gridMatrix.map((cols) =>
-        cols.map(() => {
-          const el = document.createElement('div');
-          el.classList.add('matrix__pixel');
-          el.setAttribute('data-pixelindex', String(i));
-          $pixelArea.appendChild(el);
-          i++;
-        })
-      );
-    };
 
     const onFileChange = async (file: File) => {
       const src = await srcFromFile(file);
-      $pixelArea.setAttribute('data-loading', 'true');
+      MatrixInstance.setLoading(true);
       $dropArea.style.backgroundImage = `url(${src})`;
+      $canvas.width = CANVAS_SIZE;
+      $canvas.height = CANVAS_SIZE;
+
       const ctx = $canvas.getContext('2d');
       const image = await loadImageFromSrc(src);
 
@@ -67,62 +53,88 @@ const CANVAS_SIZE = 16;
         $canvas.height
       );
 
-      gridMatrix = gridMatrix.map((cols, rowIndex) =>
-        cols.map((pixel, colIndex) => {
-          const canvasColor = ctx.getImageData(colIndex, rowIndex, 1, 1).data;
-          return [canvasColor[0], canvasColor[1], canvasColor[2]];
-        })
-      );
-
+      MatrixInstance.setGridMatrixFromCanvas(ctx);
       await wait(1000);
-      await reDrawMatrix();
-      $pixelArea.setAttribute('data-loading', 'false');
+      await MatrixInstance.reDrawMatrix();
+      MatrixInstance.setLoading(false);
     };
 
-    const reDrawMatrix = async () => {
-      let i = 0;
-      gridMatrix.map((cols) =>
-        cols.map(([r, g, b]) => {
-          const el = document.querySelector<HTMLDivElement>(
-            `[data-pixelindex="${i}"]`
-          );
-          el.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
-          i++;
-        })
-      );
+    /**
+     * Snake
+     */
 
-      await Controller.send(
-        new Uint8Array(gridMatrixToNeopixelArray(gridMatrix))
-      );
-    };
+    Snake.onStepupdate(async (step) => {
+      document.body.classList.contains('snake')
+        ? MatrixInstance.setGridMatrixFromArray(
+            getGridMatrix([0, 0, 0], CANVAS_SIZE).map((cols, rowIndex) =>
+              cols.map((pixel, colIndex) =>
+                rowIndex === step.food.x && colIndex === step.food.y
+                  ? [255, 0, 0]
+                  : step.snake.findIndex(
+                      (snakePixel) =>
+                        snakePixel.x === rowIndex && snakePixel.y === colIndex
+                    ) !== -1
+                  ? [255, 255, 255]
+                  : [0, 0, 0]
+              )
+            )
+          )
+        : Snake.stopGame();
+      await MatrixInstance.reDrawMatrix();
+    });
+
+    document
+      .querySelector<HTMLButtonElement>('#snake-button-restart')
+      .addEventListener('click', () => Snake.restart());
+
+    document
+      .querySelector<HTMLButtonElement>('#snake-button-up')
+      .addEventListener('click', () => Snake.setDirection(DIRECTIONS.UP));
+    document
+      .querySelector<HTMLButtonElement>('#snake-button-left')
+      .addEventListener('click', () => Snake.setDirection(DIRECTIONS.LEFT));
+    document
+      .querySelector<HTMLButtonElement>('#snake-button-right')
+      .addEventListener('click', () => Snake.setDirection(DIRECTIONS.RIGHT));
+    document
+      .querySelector<HTMLButtonElement>('#snake-button-down')
+      .addEventListener('click', () => Snake.setDirection(DIRECTIONS.DOWN));
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp') {
+        Snake.setDirection(DIRECTIONS.UP);
+      } else if (e.key === 'ArrowDown') {
+        Snake.setDirection(DIRECTIONS.DOWN);
+      } else if (e.key === 'ArrowLeft') {
+        Snake.setDirection(DIRECTIONS.LEFT);
+      } else if (e.key === 'ArrowRight') {
+        Snake.setDirection(DIRECTIONS.RIGHT);
+      }
+    });
 
     /**
      * Setup
      */
-
-    setUpMatrix(CANVAS_SIZE);
 
     new DropArea(
       document.querySelector<HTMLInputElement>('#drop'),
       onFileChange
     );
 
-    $connectButton.addEventListener('click', async () => {
-      await Controller.connect({ filters: [{ vendorId: 0x2e8a }] });
-      await Controller.send(
-        new Uint8Array(gridMatrixToNeopixelArray(gridMatrix))
-      );
-    });
+    $connectButton.addEventListener(
+      'click',
+      async () => await MatrixInstance.webUSBConnect()
+    );
 
     $connectButtonSkip.addEventListener('click', async () => {
       $connectArea.style.display = 'none';
     });
 
-    Controller.onReceive((data) => {
+    MatrixInstance.Controller.onReceive((data) => {
       console.log('received', { data, decoded: textDecoder.decode(data) });
     });
 
-    Controller.onDeviceConnect((device) => {
+    MatrixInstance.Controller.onDeviceConnect((device) => {
       if (device) {
         $connectArea.style.display = 'none';
       } else {

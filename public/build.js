@@ -43,6 +43,17 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     }
     return to.concat(ar || Array.prototype.slice.call(from));
 };
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 System.register("DropArea", [], function (exports_1, context_1) {
     "use strict";
     var DropArea;
@@ -309,7 +320,7 @@ System.register("image", [], function (exports_3, context_3) {
 });
 System.register("utils", [], function (exports_4, context_4) {
     "use strict";
-    var array, getGridMatrix, arrayFlat, gridMatrixToNeopixelArray, wait;
+    var array, getGridMatrix, arrayFlat, gridMatrixToNeopixelArray, wait, randomIntFromInterval;
     var __moduleName = context_4 && context_4.id;
     return {
         setters: [],
@@ -340,26 +351,289 @@ System.register("utils", [], function (exports_4, context_4) {
                 if (ms === void 0) { ms = 2000; }
                 return new Promise(function (resolve) { return window.setTimeout(function () { return resolve(); }, ms); });
             });
+            exports_4("randomIntFromInterval", randomIntFromInterval = function (min, max) {
+                return Math.floor(Math.random() * (max - min + 1) + min);
+            });
         }
     };
 });
-System.register("index", ["WebUSBController", "DropArea", "utils", "image"], function (exports_5, context_5) {
+System.register("matrix", ["utils", "WebUSBController"], function (exports_5, context_5) {
     "use strict";
-    var WebUSBController_1, DropArea_1, utils_1, image_1, CANVAS_SIZE;
+    var utils_1, WebUSBController_1, Matrix;
     var __moduleName = context_5 && context_5.id;
     return {
         setters: [
-            function (WebUSBController_1_1) {
-                WebUSBController_1 = WebUSBController_1_1;
-            },
-            function (DropArea_1_1) {
-                DropArea_1 = DropArea_1_1;
-            },
             function (utils_1_1) {
                 utils_1 = utils_1_1;
             },
+            function (WebUSBController_1_1) {
+                WebUSBController_1 = WebUSBController_1_1;
+            }
+        ],
+        execute: function () {
+            Matrix = /** @class */ (function () {
+                function Matrix(size) {
+                    this.$pixelArea = null;
+                    this.gridMatrix = utils_1.getGridMatrix([0, 0, 0], 0);
+                    this.Controller = null;
+                    this.matrixSize = 0;
+                    this.Controller = new WebUSBController_1.default();
+                    this.$pixelArea = document.querySelector('#matrix');
+                    this.matrixSize = size;
+                    this.setUpMatrix();
+                }
+                Matrix.prototype.setUpMatrix = function () {
+                    var _this = this;
+                    this.$pixelArea.style['grid-template-columns'] = "repeat(".concat(this.matrixSize, ", 1fr)");
+                    this.$pixelArea.style['grid-template-rows'] = "repeat(".concat(this.matrixSize, ", 1fr)");
+                    this.$pixelArea
+                        .querySelectorAll('.matrix__pixel')
+                        .forEach(function (e) { return e.remove(); });
+                    this.gridMatrix = utils_1.getGridMatrix([0, 0, 0], this.matrixSize);
+                    var i = 0;
+                    this.gridMatrix.map(function (cols) {
+                        return cols.map(function () {
+                            var el = document.createElement('div');
+                            el.classList.add('matrix__pixel');
+                            el.setAttribute('data-pixelindex', String(i));
+                            _this.$pixelArea.appendChild(el);
+                            i++;
+                        });
+                    });
+                };
+                Matrix.prototype.webUSBConnect = function () {
+                    return __awaiter(this, void 0, void 0, function () {
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0: return [4 /*yield*/, this.Controller.connect({ filters: [{ vendorId: 0x2e8a }] })];
+                                case 1:
+                                    _a.sent();
+                                    return [4 /*yield*/, this.Controller.send(new Uint8Array(utils_1.gridMatrixToNeopixelArray(this.gridMatrix)))];
+                                case 2:
+                                    _a.sent();
+                                    return [2 /*return*/];
+                            }
+                        });
+                    });
+                };
+                Matrix.prototype.setLoading = function (loading) {
+                    this.$pixelArea.setAttribute('data-loading', loading ? 'true' : 'false');
+                };
+                Matrix.prototype.setGridMatrixFromCanvas = function (ctx) {
+                    this.gridMatrix = this.gridMatrix.map(function (cols, rowIndex) {
+                        return cols.map(function (pixel, colIndex) {
+                            var canvasColor = ctx.getImageData(colIndex, rowIndex, 1, 1).data;
+                            return [canvasColor[0], canvasColor[1], canvasColor[2]];
+                        });
+                    });
+                };
+                Matrix.prototype.setGridMatrixFromArray = function (array) {
+                    this.gridMatrix = this.gridMatrix.map(function (cols, rowIndex) {
+                        return cols.map(function (pixel, colIndex) { return [
+                            array[rowIndex][colIndex][0],
+                            array[rowIndex][colIndex][1],
+                            array[rowIndex][colIndex][2],
+                        ]; });
+                    });
+                };
+                Matrix.prototype.reDrawMatrix = function () {
+                    return __awaiter(this, void 0, void 0, function () {
+                        var i;
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0:
+                                    i = 0;
+                                    this.gridMatrix.map(function (cols) {
+                                        return cols.map(function (_a) {
+                                            var r = _a[0], g = _a[1], b = _a[2];
+                                            var el = document.querySelector("[data-pixelindex=\"".concat(i, "\"]"));
+                                            el.style.backgroundColor = "rgb(".concat(r, ", ").concat(g, ", ").concat(b, ")");
+                                            i++;
+                                        });
+                                    });
+                                    return [4 /*yield*/, this.Controller.send(new Uint8Array(utils_1.gridMatrixToNeopixelArray(this.gridMatrix)))];
+                                case 1:
+                                    _a.sent();
+                                    return [2 /*return*/];
+                            }
+                        });
+                    });
+                };
+                return Matrix;
+            }());
+            exports_5("default", Matrix);
+        }
+    };
+});
+System.register("snake", ["utils"], function (exports_6, context_6) {
+    "use strict";
+    var utils_2, COLLISION_EVENT_KEY, UPDATE_EVENT_KEY, INSTANCES, DIRECTIONS, hasColision, MatrixSnake;
+    var __moduleName = context_6 && context_6.id;
+    return {
+        setters: [
+            function (utils_2_1) {
+                utils_2 = utils_2_1;
+            }
+        ],
+        execute: function () {
+            COLLISION_EVENT_KEY = 'nm-snake-collision-emitter';
+            UPDATE_EVENT_KEY = 'nm-snake-update-emitter';
+            INSTANCES = 0;
+            (function (DIRECTIONS) {
+                DIRECTIONS["UP"] = "UP";
+                DIRECTIONS["LEFT"] = "LEFT";
+                DIRECTIONS["RIGHT"] = "RIGHT";
+                DIRECTIONS["DOWN"] = "DOWN";
+            })(DIRECTIONS || (DIRECTIONS = {}));
+            exports_6("DIRECTIONS", DIRECTIONS);
+            hasColision = function (pixel, snake) {
+                return snake.length >= 1 &&
+                    snake.find(function (snakePixel) { return snakePixel.x === pixel.x && snakePixel.y === pixel.y; }) !== undefined;
+            };
+            MatrixSnake = /** @class */ (function () {
+                function MatrixSnake(_a) {
+                    var _b = _a.width, width = _b === void 0 ? 16 : _b, _c = _a.height, height = _c === void 0 ? 16 : _c, _d = _a.fps, fps = _d === void 0 ? 4 : _d;
+                    this.width = 16;
+                    this.height = 16;
+                    this.fps = 4;
+                    this.indexYMax = this.height - 1;
+                    this.indexXMax = this.width - 1;
+                    this.interval = 0;
+                    this.gameStep = null;
+                    this.screen = [];
+                    this.collisionEventKey = null;
+                    this.updateEventKey = null;
+                    this.width = width;
+                    this.height = height;
+                    this.fps = fps;
+                    this.indexYMax = this.height - 1;
+                    this.indexXMax = this.width - 1;
+                    INSTANCES++;
+                    this.collisionEventKey = COLLISION_EVENT_KEY + '-' + INSTANCES;
+                    this.updateEventKey = UPDATE_EVENT_KEY + '-' + INSTANCES;
+                }
+                MatrixSnake.prototype.onCollision = function (callback) {
+                    document.addEventListener(this.collisionEventKey, function (_a) {
+                        callback();
+                    });
+                };
+                MatrixSnake.prototype.setDirection = function (direction) {
+                    this.gameStep = __assign(__assign({}, this.gameStep), { direction: direction });
+                };
+                MatrixSnake.prototype.onStepupdate = function (callback) {
+                    document.addEventListener(this.updateEventKey, function (_a) {
+                        var detail = _a.detail;
+                        callback(detail);
+                    });
+                };
+                MatrixSnake.prototype.restart = function () {
+                    var _this = this;
+                    this.stopGame();
+                    this.interval = window.setInterval(function () { return _this.doStep(); }, Math.round((60 * 10) / this.fps));
+                    this.gameStep = {
+                        direction: DIRECTIONS.RIGHT,
+                        snake: [
+                            {
+                                x: Math.round(this.width / 2),
+                                y: Math.round(this.height / 2),
+                            },
+                        ],
+                        food: this.generateFood(),
+                    };
+                    this.screen = Array(this.height).fill(Array(this.width).fill(0));
+                };
+                MatrixSnake.prototype.stopGame = function () {
+                    clearInterval(this.interval);
+                };
+                MatrixSnake.prototype.getNextPixel = function (_a, direction) {
+                    var x = _a.x, y = _a.y;
+                    var indexYMax = this.height - 1;
+                    var indexXMax = this.width - 1;
+                    switch (direction) {
+                        case DIRECTIONS.LEFT:
+                            return {
+                                x: x,
+                                y: y - 1 < 0 ? indexYMax : y - 1,
+                            };
+                        case DIRECTIONS.RIGHT:
+                            return {
+                                x: x,
+                                y: y + 1 > indexYMax ? 0 : y + 1,
+                            };
+                        case DIRECTIONS.UP:
+                            return {
+                                x: x - 1 < 0 ? indexXMax : x - 1,
+                                y: y,
+                            };
+                        case DIRECTIONS.DOWN:
+                            return {
+                                x: x + 1 > indexXMax ? 0 : x + 1,
+                                y: y,
+                            };
+                        default:
+                            console.log('none');
+                    }
+                };
+                MatrixSnake.prototype.generateFood = function (snake) {
+                    if (snake === void 0) { snake = null; }
+                    var food = {
+                        x: utils_2.randomIntFromInterval(0, this.indexXMax),
+                        y: utils_2.randomIntFromInterval(0, this.indexYMax),
+                    };
+                    return food;
+                    var validPositionFound = false;
+                    while (validPositionFound) {
+                        food = {
+                            x: utils_2.randomIntFromInterval(0, this.indexXMax),
+                            y: utils_2.randomIntFromInterval(0, this.indexYMax),
+                        };
+                        if (!hasColision(food, snake)) {
+                            validPositionFound = true;
+                        }
+                    }
+                    return food;
+                };
+                MatrixSnake.prototype.doStep = function () {
+                    var newGameStep = this.gameStep;
+                    var nextPixel = this.getNextPixel(newGameStep.snake[0], newGameStep.direction);
+                    var oldSnakeWithoutFood = newGameStep.snake.filter(function (pixel, i, full) { return i !== full.length - 1; });
+                    var newSnake = __spreadArray([nextPixel], newGameStep.snake, true);
+                    var snakeWithoutFood = __spreadArray([nextPixel], oldSnakeWithoutFood, true);
+                    if (hasColision(nextPixel, oldSnakeWithoutFood)) {
+                        document.dispatchEvent(new CustomEvent(this.collisionEventKey));
+                        return;
+                    }
+                    var foundFood = nextPixel.x === newGameStep.food.x && nextPixel.y === newGameStep.food.y;
+                    var snake = foundFood ? newSnake : snakeWithoutFood;
+                    this.gameStep = __assign(__assign({}, this.gameStep), { snake: snake, food: foundFood ? this.generateFood() : newGameStep.food });
+                    document.dispatchEvent(new CustomEvent(this.updateEventKey, { detail: this.gameStep }));
+                };
+                return MatrixSnake;
+            }());
+            exports_6("default", MatrixSnake);
+        }
+    };
+});
+System.register("index", ["DropArea", "utils", "image", "matrix", "snake"], function (exports_7, context_7) {
+    "use strict";
+    var DropArea_1, utils_3, image_1, matrix_1, snake_1, CANVAS_SIZE;
+    var __moduleName = context_7 && context_7.id;
+    return {
+        setters: [
+            function (DropArea_1_1) {
+                DropArea_1 = DropArea_1_1;
+            },
+            function (utils_3_1) {
+                utils_3 = utils_3_1;
+            },
             function (image_1_1) {
                 image_1 = image_1_1;
+            },
+            function (matrix_1_1) {
+                matrix_1 = matrix_1_1;
+            },
+            function (snake_1_1) {
+                snake_1 = snake_1_1;
             }
         ],
         execute: function () {
@@ -367,36 +641,21 @@ System.register("index", ["WebUSBController", "DropArea", "utils", "image"], fun
             (function () {
                 var _this = this;
                 document.addEventListener('DOMContentLoaded', function (event) {
-                    var Controller = new WebUSBController_1.default();
+                    var MatrixInstance = new matrix_1.default(CANVAS_SIZE);
+                    var Snake = new snake_1.default({
+                        width: CANVAS_SIZE,
+                        height: CANVAS_SIZE,
+                        fps: 3,
+                    });
                     var textDecoder = new TextDecoder('utf-8');
                     var $canvas = document.querySelector('#image-canvas');
-                    var $pixelArea = document.querySelector('#matrix');
                     var $connectArea = document.querySelector('#connect-area');
                     var $connectButton = document.querySelector('#connect');
                     var $connectButtonSkip = document.querySelector('#connect-skip');
                     var $dropArea = document.querySelector('#drop');
-                    var gridMatrix = utils_1.getGridMatrix([0, 0, 0], 0);
                     /**
-                     * Methods
+                     * Image
                      */
-                    var setUpMatrix = function (size) {
-                        $canvas.width = size;
-                        $canvas.height = size;
-                        $pixelArea.style['grid-template-columns'] = "repeat(".concat(size, ", 1fr)");
-                        $pixelArea.style['grid-template-rows'] = "repeat(".concat(size, ", 1fr)");
-                        $pixelArea.querySelectorAll('.matrix__pixel').forEach(function (e) { return e.remove(); });
-                        gridMatrix = utils_1.getGridMatrix([0, 0, 0], size);
-                        var i = 0;
-                        gridMatrix.map(function (cols) {
-                            return cols.map(function () {
-                                var el = document.createElement('div');
-                                el.classList.add('matrix__pixel');
-                                el.setAttribute('data-pixelindex', String(i));
-                                $pixelArea.appendChild(el);
-                                i++;
-                            });
-                        });
-                    };
                     var onFileChange = function (file) { return __awaiter(_this, void 0, void 0, function () {
                         var src, ctx, image, imgSize, left, top;
                         return __generator(this, function (_a) {
@@ -404,8 +663,10 @@ System.register("index", ["WebUSBController", "DropArea", "utils", "image"], fun
                                 case 0: return [4 /*yield*/, image_1.srcFromFile(file)];
                                 case 1:
                                     src = _a.sent();
-                                    $pixelArea.setAttribute('data-loading', 'true');
+                                    MatrixInstance.setLoading(true);
                                     $dropArea.style.backgroundImage = "url(".concat(src, ")");
+                                    $canvas.width = CANVAS_SIZE;
+                                    $canvas.height = CANVAS_SIZE;
                                     ctx = $canvas.getContext('2d');
                                     return [4 /*yield*/, image_1.loadImageFromSrc(src)];
                                 case 2:
@@ -414,72 +675,94 @@ System.register("index", ["WebUSBController", "DropArea", "utils", "image"], fun
                                     left = (image.width - imgSize) / 2;
                                     top = (image.height - imgSize) / 2;
                                     ctx.drawImage(image, left, top, imgSize, imgSize, 0, 0, $canvas.width, $canvas.height);
-                                    gridMatrix = gridMatrix.map(function (cols, rowIndex) {
-                                        return cols.map(function (pixel, colIndex) {
-                                            var canvasColor = ctx.getImageData(colIndex, rowIndex, 1, 1).data;
-                                            return [canvasColor[0], canvasColor[1], canvasColor[2]];
-                                        });
-                                    });
-                                    return [4 /*yield*/, utils_1.wait(1000)];
+                                    MatrixInstance.setGridMatrixFromCanvas(ctx);
+                                    return [4 /*yield*/, utils_3.wait(1000)];
                                 case 3:
                                     _a.sent();
-                                    return [4 /*yield*/, reDrawMatrix()];
+                                    return [4 /*yield*/, MatrixInstance.reDrawMatrix()];
                                 case 4:
                                     _a.sent();
-                                    $pixelArea.setAttribute('data-loading', 'false');
-                                    return [2 /*return*/];
-                            }
-                        });
-                    }); };
-                    var reDrawMatrix = function () { return __awaiter(_this, void 0, void 0, function () {
-                        var i;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0:
-                                    i = 0;
-                                    gridMatrix.map(function (cols) {
-                                        return cols.map(function (_a) {
-                                            var r = _a[0], g = _a[1], b = _a[2];
-                                            var el = document.querySelector("[data-pixelindex=\"".concat(i, "\"]"));
-                                            el.style.backgroundColor = "rgb(".concat(r, ", ").concat(g, ", ").concat(b, ")");
-                                            i++;
-                                        });
-                                    });
-                                    return [4 /*yield*/, Controller.send(new Uint8Array(utils_1.gridMatrixToNeopixelArray(gridMatrix)))];
-                                case 1:
-                                    _a.sent();
+                                    MatrixInstance.setLoading(false);
                                     return [2 /*return*/];
                             }
                         });
                     }); };
                     /**
-                     * Setup
+                     * Snake
                      */
-                    setUpMatrix(CANVAS_SIZE);
-                    new DropArea_1.default(document.querySelector('#drop'), onFileChange);
-                    $connectButton.addEventListener('click', function () { return __awaiter(_this, void 0, void 0, function () {
+                    Snake.onStepupdate(function (step) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             switch (_a.label) {
-                                case 0: return [4 /*yield*/, Controller.connect({ filters: [{ vendorId: 0x2e8a }] })];
+                                case 0:
+                                    document.body.classList.contains('snake')
+                                        ? MatrixInstance.setGridMatrixFromArray(utils_3.getGridMatrix([0, 0, 0], CANVAS_SIZE).map(function (cols, rowIndex) {
+                                            return cols.map(function (pixel, colIndex) {
+                                                return rowIndex === step.food.x && colIndex === step.food.y
+                                                    ? [255, 0, 0]
+                                                    : step.snake.findIndex(function (snakePixel) {
+                                                        return snakePixel.x === rowIndex && snakePixel.y === colIndex;
+                                                    }) !== -1
+                                                        ? [255, 255, 255]
+                                                        : [0, 0, 0];
+                                            });
+                                        }))
+                                        : Snake.stopGame();
+                                    return [4 /*yield*/, MatrixInstance.reDrawMatrix()];
                                 case 1:
-                                    _a.sent();
-                                    return [4 /*yield*/, Controller.send(new Uint8Array(utils_1.gridMatrixToNeopixelArray(gridMatrix)))];
-                                case 2:
                                     _a.sent();
                                     return [2 /*return*/];
                             }
                         });
                     }); });
+                    document
+                        .querySelector('#snake-button-restart')
+                        .addEventListener('click', function () { return Snake.restart(); });
+                    document
+                        .querySelector('#snake-button-up')
+                        .addEventListener('click', function () { return Snake.setDirection(snake_1.DIRECTIONS.UP); });
+                    document
+                        .querySelector('#snake-button-left')
+                        .addEventListener('click', function () { return Snake.setDirection(snake_1.DIRECTIONS.LEFT); });
+                    document
+                        .querySelector('#snake-button-right')
+                        .addEventListener('click', function () { return Snake.setDirection(snake_1.DIRECTIONS.RIGHT); });
+                    document
+                        .querySelector('#snake-button-down')
+                        .addEventListener('click', function () { return Snake.setDirection(snake_1.DIRECTIONS.DOWN); });
+                    window.addEventListener('keydown', function (e) {
+                        if (e.key === 'ArrowUp') {
+                            Snake.setDirection(snake_1.DIRECTIONS.UP);
+                        }
+                        else if (e.key === 'ArrowDown') {
+                            Snake.setDirection(snake_1.DIRECTIONS.DOWN);
+                        }
+                        else if (e.key === 'ArrowLeft') {
+                            Snake.setDirection(snake_1.DIRECTIONS.LEFT);
+                        }
+                        else if (e.key === 'ArrowRight') {
+                            Snake.setDirection(snake_1.DIRECTIONS.RIGHT);
+                        }
+                    });
+                    /**
+                     * Setup
+                     */
+                    new DropArea_1.default(document.querySelector('#drop'), onFileChange);
+                    $connectButton.addEventListener('click', function () { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0: return [4 /*yield*/, MatrixInstance.webUSBConnect()];
+                            case 1: return [2 /*return*/, _a.sent()];
+                        }
+                    }); }); });
                     $connectButtonSkip.addEventListener('click', function () { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
                             $connectArea.style.display = 'none';
                             return [2 /*return*/];
                         });
                     }); });
-                    Controller.onReceive(function (data) {
+                    MatrixInstance.Controller.onReceive(function (data) {
                         console.log('received', { data: data, decoded: textDecoder.decode(data) });
                     });
-                    Controller.onDeviceConnect(function (device) {
+                    MatrixInstance.Controller.onDeviceConnect(function (device) {
                         if (device) {
                             $connectArea.style.display = 'none';
                         }

@@ -13,6 +13,18 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
 </head>
 <body>
+<div id="menu" class="menu">
+    <button class="menu__item menu__item--image" onclick="document.body.classList.remove('snake')">
+        <svg class="icon menu__icon" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M8.5,13.5L11,16.5L14.5,12L19,18H5M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19Z" />
+        </svg>
+    </button>
+    <button class="menu__item menu__item--snake" onclick="document.body.classList.add('snake')">
+        <svg class="icon menu__icon" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M19.5 17H18C19.1 17 20 16.1 20 15S19.1 13 18 13V9C18 8 18 7 16.92 6.14C16.97 5.93 17 5.72 17 5.5C17 3.57 15 2 12.5 2C10.24 2 8.38 3.31 8.07 5H6L3.71 2.79L3 3.5L5 5.5L3 7.5L3.71 8.21L6 6H8.07C8.38 7.69 10.24 9 12.5 9C13 9 13.5 8.92 13.93 8.8C13.97 8.87 14 8.94 14 9V13H8C6.9 13 6 13.9 6 15S6.9 17 8 17H6.5C5.12 17 4 18.12 4 19.5C4 19.67 4 19.84 4.05 20H4C2.9 20 2 20.9 2 22H19.5C20.88 22 22 20.88 22 19.5S20.88 17 19.5 17M12 5C11.45 5 11 4.55 11 4S11.45 3 12 3 13 3.45 13 4 12.55 5 12 5Z" />
+        </svg>
+    </button>
+</div>
 <div id="connect-area" class="connect-area">
     <div class="connect-area__popup">
         <h2 class="connect-area__title">
@@ -33,12 +45,44 @@
     </div>
 </div>
 <div class="main-content">
-    <div id="drop" class="main-content__drop drop">
-        <svg viewBox="0 0 24 24" class="drop__icon icon">
-            <path fill="currentColor"
-                  d="M21,17H7V3H21M21,1H7A2,2 0 0,0 5,3V17A2,2 0 0,0 7,19H21A2,2 0 0,0 23,17V3A2,2 0 0,0 21,1M3,5H1V21A2,2 0 0,0 3,23H19V21H3M15.96,10.29L13.21,13.83L11.25,11.47L8.5,15H19.5L15.96,10.29Z"/>
-        </svg>
-        <p class="drop__text">Drop image or click to select</p>
+    <div class="image-controls main-content__controls main-content__controls--image">
+        <div id="drop" class="image-controls__drop drop">
+            <svg viewBox="0 0 24 24" class="drop__icon icon">
+                <path fill="currentColor"
+                      d="M21,17H7V3H21M21,1H7A2,2 0 0,0 5,3V17A2,2 0 0,0 7,19H21A2,2 0 0,0 23,17V3A2,2 0 0,0 21,1M3,5H1V21A2,2 0 0,0 3,23H19V21H3M15.96,10.29L13.21,13.83L11.25,11.47L8.5,15H19.5L15.96,10.29Z"/>
+            </svg>
+            <p class="drop__text">Drop image or click to select</p>
+        </div>
+        <canvas id="image-canvas" class="main-content__canvas"></canvas>
+    </div>
+    <div class="snake-controls main-content__controls main-content__controls--snake">
+        <div class="snake-controls__wrapper">
+            <button class="button snake-controls__button snake-controls__button--up" id="snake-button-up">
+                <svg viewBox="0 0 24 24" class="icon snake-controls__icon">
+                    <path fill="currentColor" d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" />
+                </svg>
+            </button>
+            <button class="button snake-controls__button snake-controls__button--left" id="snake-button-left">
+                <svg viewBox="0 0 24 24" class="icon snake-controls__icon">
+                    <path fill="currentColor" d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" />
+                </svg>
+            </button>
+            <button class="snake-controls__button snake-controls__button--restart" id="snake-button-restart">
+                <svg viewBox="0 0 24 24" class="icon snake-controls__icon">
+                    <path fill="currentColor" d="M12,4C14.1,4 16.1,4.8 17.6,6.3C20.7,9.4 20.7,14.5 17.6,17.6C15.8,19.5 13.3,20.2 10.9,19.9L11.4,17.9C13.1,18.1 14.9,17.5 16.2,16.2C18.5,13.9 18.5,10.1 16.2,7.7C15.1,6.6 13.5,6 12,6V10.6L7,5.6L12,0.6V4M6.3,17.6C3.7,15 3.3,11 5.1,7.9L6.6,9.4C5.5,11.6 5.9,14.4 7.8,16.2C8.3,16.7 8.9,17.1 9.6,17.4L9,19.4C8,19 7.1,18.4 6.3,17.6Z" />
+                </svg>
+            </button>
+            <button class="button snake-controls__button snake-controls__button--right" id="snake-button-right">
+                <svg viewBox="0 0 24 24" class="icon snake-controls__icon">
+                    <path fill="currentColor" d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" />
+                </svg>
+            </button>
+            <button class="button snake-controls__button snake-controls__button--down" id="snake-button-down">
+                <svg viewBox="0 0 24 24" class="icon snake-controls__icon">
+                    <path fill="currentColor" d="M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z" />
+                </svg>
+            </button>
+        </div>
     </div>
     <svg class="main-content__arrow icon" viewBox="0 0 24 24">
         <path fill="currentColor" d="M11,16H3V8H11V2L21,12L11,22V16M13,7V10H5V14H13V17L18,12L13,7Z"/>
@@ -46,7 +90,6 @@
     <div id="matrix" class="matrix main-content__matrix">
         <div class="matrix__loader"></div>
     </div>
-    <canvas id="image-canvas" class="main-content__canvas"></canvas>
 </div>
 </body>
 </html>

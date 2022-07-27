@@ -26,3 +26,6 @@ export const gridMatrixToNeopixelArray = (gridMatrix: rgbT[][]): number[] => {
 
 export const wait = (ms: number = 2000): Promise<void> =>
   new Promise((resolve) => window.setTimeout(() => resolve(), ms));
+
+export const randomIntFromInterval = (min, max) =>
+  Math.floor(Math.random() * (max - min + 1) + min);
